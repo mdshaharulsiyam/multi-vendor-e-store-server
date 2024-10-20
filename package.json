@@ -10,7 +10,7 @@
     "install-run": "npm install && cd socket && npm install && cd .. && concurrently \"nodemon server.js\" \"nodemon socket/index.js\"",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false",
     "install-all": "npm install && cd socket && npm install && cd ..",
-    "run-all": "concurrently \"nodemon server.js\" \"nodemon socket/index.js\"",
+    "run-all": "concurrently \"node server.js\" \"node socket/index.js\"",
     "start": "npm run install-all && npm run run-all"
   },
   "author": "Om Prakash Pattjoshi",
@@ -27,11 +27,11 @@
     "mongoose": "^7.0.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.1",
-    "nodemon": "^2.0.20",
     "stripe": "^12.0.0"
   },
   "description": "",
   "devDependencies": {
-    "concurrently": "^9.0.1"
+    "concurrently": "^9.0.1",
+    "nodemon": "^3.1.7"
   }
 }
