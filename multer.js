@@ -49,27 +49,19 @@ const auth = new google.auth.GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/drive'],
 });
 const driveService = google.drive({ version: 'v3', auth });
-
-// Use memory storage for multer to avoid saving on disk
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
-
-// Helper function to convert buffer to stream
 const bufferToStream = (buffer) => {
   const stream = new Readable();
   stream.push(buffer);
   stream.push(null);
   return stream;
 };
-
-// Function to upload file to Google Drive
 const uploadToDrive = async (file, folderId) => {
   const fileMetadata = {
     name: file.originalname,
     parents: folderId ? [folderId] : [],
   };
-  
-  // Use bufferToStream to pass the file buffer as a readable stream
   const media = {
     mimeType: file.mimetype,
     body: bufferToStream(file.buffer),
