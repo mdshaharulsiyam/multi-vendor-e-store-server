@@ -51,7 +51,11 @@ app.use("/api/v2/order", order);
 app.use("/api/v2/message", message);
 app.use("/api/v2/conversation", conversation);
 app.use("/api/v2/withdraw", withdraw);
-
+app.get('/',async(req,res)=>{
+  res.json({
+    message:'server is running'
+  })
+})
 // API routes for file uploads
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
