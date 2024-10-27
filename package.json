@@ -6,14 +6,15 @@
     "node": "18.16.0"
   },
   "scripts": {
-    "dev": "concurrently \"nodemon server.js\" \"nodemon socket/index.js\"",
+    "dev-both": "concurrently \"nodemon server.js\" \"nodemon socket/index.js\"",
     "install-run": "npm install && cd socket && npm install && cd .. && concurrently \"nodemon server.js\" \"nodemon socket/index.js\"",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false",
     "start-all": "npm run start-server && npm run start-socket",
     "install-all": "npm install && cd socket && npm install && cd ..",
-    "start": "npm run install-all && npm run run-all",
+    "start-both": "npm run install-all && npm run run-all",
     "start-server": "node server.js",
     "start-socket": "node socket/index.js",
+    "dev": "node socket/index.js",
     "run-all": "node server.js && node socket/index.js"
   },
   "author": "Shaharul siyam",
