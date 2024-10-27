@@ -5,7 +5,7 @@ const router = express.Router();
 const Product = require("../model/product");
 const Order = require("../model/order");
 const Shop = require("../model/shop");
-const { upload } = require("../multer");
+const { upload, uploadToDrive } = require("../multer");
 const ErrorHandler = require("../utils/ErrorHandler");
 const fs = require("fs");
 
@@ -21,7 +21,9 @@ router.post(
         return next(new ErrorHandler("Shop Id is invalid!", 400));
       } else {
         const files = req.files;
-        const imageUrls = files.map((file) => `${file.filename}`);
+        const uploadPromises = files.map(file => uploadToDrive(file));
+        const results = await Promise.all(uploadPromises);
+        const imageUrls = results.map((file) => `${file.viewableUrl}`);
 
         const productData = req.body;
         productData.images = imageUrls;

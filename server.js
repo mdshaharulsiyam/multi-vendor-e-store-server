@@ -67,6 +67,7 @@ const order = require("./controller/order");
 const message = require("./controller/message");
 const conversation = require("./controller/conversation");
 const withdraw = require("./controller/withdraw");
+const { upload, uploadToDrive } = require("./multer");
 app.use("/api/v2/withdraw", withdraw);
 
 // end points
@@ -79,6 +80,56 @@ app.use("/api/v2/product", product);
 app.use("/api/v2/event", event);
 app.use("/api/v2/coupon", coupon);
 app.use("/api/v2/payment", payment);
+app.post("/upload", upload.single("file"), async (req, res) => {
+  try {
+    const file = req.file;
+
+    // Check if a file is provided
+    if (!file) {
+      return res.status(400).json({ error: "No file provided" });
+    }
+
+    // Call the uploadToDrive function with the uploaded file
+    const result = await uploadToDrive(file, '1OdYalsTxXngYC2FCiO7c-RP4o4NgAnEm');
+
+    // Send back the result, which includes the viewable URL and file ID
+    res.status(200).json({
+      message: "File uploaded successfully",
+      fileId: result.id,
+      fileName: result.name,
+      viewableUrl: result.viewableUrl,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/upload-multiple", upload.array("files", 10), async (req, res) => {
+  try {
+    const files = req.files;
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: "No files provided" });
+    }
+    const uploadPromises = files.map((file) => uploadToDrive(file, '1OdYalsTxXngYC2FCiO7c-RP4o4NgAnEm'));
+    const results = await Promise.all(uploadPromises);
+
+    // Map the results to extract necessary information for response
+    const uploadResults = results.map((result) => ({
+      fileId: result.id,
+      fileName: result.name,
+      viewableUrl: result.viewableUrl,
+    }));
+
+    // Send back the results for all files
+    res.status(200).json({
+      message: "Files uploaded successfully",
+      files: uploadResults,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // it'for errhendel
 app.use(ErrorHandler);

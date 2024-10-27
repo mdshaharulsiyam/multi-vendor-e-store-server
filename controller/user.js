@@ -1,7 +1,7 @@
 const express = require("express");
 const path = require("path");
 const User = require("../model/user");
-const { upload } = require("../multer");
+const { upload, uploadToDrive } = require("../multer");
 const ErrorHandler = require("../utils/ErrorHandler");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
@@ -19,21 +19,11 @@ router.post("/create-user", upload.single("file"), async (req, res, next) => {
 
     if (userEmail) {
       // if user already exits account is not create and file is deleted
-      const filename = req.file.filename;
-      const filePath = `uploads/${filename}`;
-      fs.unlink(filePath, (err) => {
-        if (err) {
-          console.log(err);
-          res.status(500).json({ message: "Error deleting file" });
-        }
-      });
-
       return next(new ErrorHandler("User already exits", 400));
     }
 
-    const filename = req.file.filename;
-    const fileUrl = path.join(filename);
-
+    const result = await uploadToDrive(req.file)
+    const fileUrl = result.viewableUrl;
     const user = {
       name: name,
       email: email,
@@ -234,13 +224,10 @@ router.put(
   upload.single("image"),
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const existsUser = await User.findById(req.user.id);
+      // const existsUser = await User.findById(req.user.id);
 
-      const existAvatarPath = `uploads/${existsUser.avatar}`;
-
-      fs.unlinkSync(existAvatarPath); // Delete Priviuse Image
-
-      const fileUrl = path.join(req.file.filename); // new image
+      const result = await uploadToDrive(req.file)
+      const fileUrl = result.viewableUrl; // new image
 
       /* The code `const user = await User.findByIdAndUpdate(req.user.id, { avatar: fileUrl });` is
         updating the avatar field of the user with the specified `req.user.id`. It uses the
