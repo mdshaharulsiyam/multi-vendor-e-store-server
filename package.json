@@ -14,7 +14,7 @@
     "start-both": "npm run install-all && npm run run-all",
     "start-server": "node server.js",
     "start-socket": "node socket/index.js",
-    "dev": "node socket/index.js",
+    "dev": "node index.js",
     "run-all": "node server.js && node socket/index.js"
   },
   "author": "Shaharul siyam",
