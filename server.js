@@ -1,62 +1,34 @@
 const express = require("express");
+const socketIO = require("socket.io");
+const http = require("http");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
 const ErrorHandler = require("./middleware/error");
 const connectDatabase = require("./db/Database");
+
+require("dotenv").config({ path: process.env.NODE_ENV !== "PRODUCTION" ? "config/.env" : undefined });
+
 const app = express();
+const server = http.createServer(app); // Create HTTP server to handle HTTP and WebSocket
+const io = socketIO(server); // Initialize Socket.IO on the same server
 
-const cookieParser = require("cookie-parser");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const path = require("path");
-
-// config
-if (process.env.NODE_ENV !== "PRODUCTION") {
-  require("dotenv").config({
-    path: "config/.env",
-  });
-}
-// connect db
+// Connect to the database
 connectDatabase();
 
-// create server
-const server = app.listen(process.env.PORT, () => {
-  console.log(`Server is running on https://multi-vendor-fronted.vercel.app:${process.env.PORT}`);
-});
-
-// middlewares
+// Middlewares
 app.use(express.json());
 app.use(cookieParser());
-// Enable CORS for all routes
-
-app.use(
-  cors({
-    origin: ["http://localhost:3001", 'http://localhost:3000', 'https://multi-vendor-fronted.vercel.app'],
-    credentials: true,
-  })
-);
-
-app.use("/", express.static("uploads"));
-
-app.get("/test", (req, res) => {
-  res.send("Hello World!");
-});
-
+app.use(cors({
+  origin: ["http://localhost:3001", "http://localhost:3002","http://localhost:3000", "https://multi-vendor-fronted.vercel.app"],
+  credentials: true,
+}));
 app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 
-// why bodyparser?
-// bodyparser is used to parse the data from the body of the request to the server (POST, PUT, DELETE, etc.)
+// Static files
+app.use("/", express.static("uploads"));
 
-// config
-if (process.env.NODE_ENV !== "PRODUCTION") {
-  require("dotenv").config({
-    path: "config/.env",
-  });
-}
-
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
-
-// routes
+// Routes
 const user = require("./controller/user");
 const shop = require("./controller/shop");
 const product = require("./controller/product");
@@ -68,31 +40,24 @@ const message = require("./controller/message");
 const conversation = require("./controller/conversation");
 const withdraw = require("./controller/withdraw");
 const { upload, uploadToDrive } = require("./multer");
-app.use("/api/v2/withdraw", withdraw);
 
-// end points
 app.use("/api/v2/user", user);
-app.use("/api/v2/conversation", conversation);
-app.use("/api/v2/message", message);
-app.use("/api/v2/order", order);
 app.use("/api/v2/shop", shop);
 app.use("/api/v2/product", product);
 app.use("/api/v2/event", event);
 app.use("/api/v2/coupon", coupon);
 app.use("/api/v2/payment", payment);
+app.use("/api/v2/order", order);
+app.use("/api/v2/message", message);
+app.use("/api/v2/conversation", conversation);
+app.use("/api/v2/withdraw", withdraw);
+
+// API routes for file uploads
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
     const file = req.file;
-
-    // Check if a file is provided
-    if (!file) {
-      return res.status(400).json({ error: "No file provided" });
-    }
-
-    // Call the uploadToDrive function with the uploaded file
+    if (!file) return res.status(400).json({ error: "No file provided" });
     const result = await uploadToDrive(file, '1OdYalsTxXngYC2FCiO7c-RP4o4NgAnEm');
-
-    // Send back the result, which includes the viewable URL and file ID
     res.status(200).json({
       message: "File uploaded successfully",
       fileId: result.id,
@@ -107,21 +72,14 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 app.post("/upload-multiple", upload.array("files", 10), async (req, res) => {
   try {
     const files = req.files;
-
-    if (!files || files.length === 0) {
-      return res.status(400).json({ error: "No files provided" });
-    }
+    if (!files || files.length === 0) return res.status(400).json({ error: "No files provided" });
     const uploadPromises = files.map((file) => uploadToDrive(file, '1OdYalsTxXngYC2FCiO7c-RP4o4NgAnEm'));
     const results = await Promise.all(uploadPromises);
-
-    // Map the results to extract necessary information for response
     const uploadResults = results.map((result) => ({
       fileId: result.id,
       fileName: result.name,
       viewableUrl: result.viewableUrl,
     }));
-
-    // Send back the results for all files
     res.status(200).json({
       message: "Files uploaded successfully",
       files: uploadResults,
@@ -131,21 +89,73 @@ app.post("/upload-multiple", upload.array("files", 10), async (req, res) => {
   }
 });
 
-// it'for errhendel
-app.use(ErrorHandler);
-
-// Handling Uncaught Exceptions
-process.on("uncaughtException", (err) => {
-  console.log(`Error: ${err.message}`);
-  console.log(`shutting down the server for handling UNCAUGHT EXCEPTION! 💥`);
+// Socket.IO logic
+let users = [];
+const addUser = (userId, socketId) => {
+  !users.some((user) => user.userId === userId) && users.push({ userId, socketId });
+};
+const removeUser = (socketId) => {
+  users = users.filter((user) => user.socketId !== socketId);
+};
+const getUser = (receiverId) => users.find((user) => user.userId === receiverId);
+const createMessage = ({ senderId, receiverId, text, images }) => ({
+  senderId,
+  receiverId,
+  text,
+  images,
+  seen: false,
 });
 
-// unhandled promise rejection
-process.on("unhandledRejection", (err) => {
-  console.log(`Shutting down the server for ${err.message}`);
-  console.log(`shutting down the server for unhandle promise rejection`);
-
-  server.close(() => {
-    process.exit(1);
+io.on("connection", (socket) => {
+  socket.on("addUser", (userId) => {
+    addUser(userId, socket.id);
+    io.emit("getUsers", users);
   });
+
+  const messages = {};
+  socket.on("sendMessage", ({ senderId, receiverId, text, images }) => {
+    const message = createMessage({ senderId, receiverId, text, images });
+    const user = getUser(receiverId);
+    messages[receiverId] = messages[receiverId] ? [...messages[receiverId], message] : [message];
+    io.to(user?.socketId).emit("getMessage", message);
+  });
+
+  socket.on("messageSeen", ({ senderId, receiverId, messageId }) => {
+    const user = getUser(senderId);
+    const message = messages[senderId]?.find((msg) => msg.receiverId === receiverId && msg.id === messageId);
+    if (message) {
+      message.seen = true;
+      io.to(user?.socketId).emit("messageSeen", { senderId, receiverId, messageId });
+    }
+  });
+
+  socket.on("updateLastMessage", ({ lastMessage, lastMessagesId }) => {
+    io.emit("getLastMessage", { lastMessage, lastMessagesId });
+  });
+
+  socket.on("disconnect", () => {
+    removeUser(socket.id);
+    io.emit("getUsers", users);
+  });
+});
+
+// Error Handling
+app.use(ErrorHandler);
+
+// Uncaught Exceptions and Promise Rejections
+process.on("uncaughtException", (err) => {
+  console.error(`Error: ${err.message}`);
+  console.error("Shutting down due to uncaught exception");
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error(`Unhandled rejection: ${err.message}`);
+  server.close(() => process.exit(1));
+});
+
+// Start the combined server
+const PORT = process.env.PORT || 8000;
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
