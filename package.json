@@ -13,9 +13,10 @@
     "install-all": "npm install && cd socket && npm install && cd ..",
     "start": "npm run install-all && npm run run-all",
     "start-server": "node server.js",
-    "start-socket": "node socket/index.js"
+    "start-socket": "node socket/index.js",
+    "run-all": "node server.js && node socket/index.js"
   },
-  "author": "Om Prakash Pattjoshi",
+  "author": "Shaharul siyam",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.1.0",
