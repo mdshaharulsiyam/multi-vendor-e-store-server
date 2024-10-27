@@ -2,7 +2,7 @@ const Messages = require("../model/messages");
 const ErrorHandler = require("../utils/ErrorHandler");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const express = require("express");
-const { upload } = require("../multer");
+const { upload, uploadToDrive } = require("../multer");
 const router = express.Router();
 const path = require("path");
 
@@ -15,9 +15,8 @@ router.post(
       const messageData = req.body;
 
       if (req.file) {
-        const filename = req.file.filename;
-        const fileUrl = path.join(filename);
-        messageData.images = fileUrl;
+        const result = await uploadToDrive(req.file)
+        messageData.images = result.viewableUrl;
       }
 
       messageData.conversationId = req.body.conversationId;

@@ -42,7 +42,7 @@ const firebaseSecret = {
   client_x509_cert_url: process.env.GOOGLE_CLIENT_X509_CERT_URL,
   universe_domain: process.env.GOOGLE_UNIVERSE_DOMAIN,
 };
-
+const  folderId = process.env.DRIVE_FOLDER_ID
 // Initialize Google Drive API client
 const auth = new google.auth.GoogleAuth({
   credentials: firebaseSecret,
@@ -57,7 +57,8 @@ const bufferToStream = (buffer) => {
   stream.push(null);
   return stream;
 };
-const uploadToDrive = async (file, folderId) => {
+const uploadToDrive = async (file) => {
+  //folderId
   const fileMetadata = {
     name: file.originalname,
     parents: folderId ? [folderId] : [],
@@ -83,7 +84,8 @@ const uploadToDrive = async (file, folderId) => {
       },
     });
 
-    const viewableUrl = `https://drive.google.com/thumbnail?id=${fileId}`;
+    // const viewableUrl = `https://drive.google.com/thumbnail?id=${fileId}`;
+      const viewableUrl = `thumbnail?id=${fileId}`;
     return { id: fileId, name: response.data.name, viewableUrl: viewableUrl };
 
   } catch (error) {
