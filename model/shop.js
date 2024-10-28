@@ -10,6 +10,7 @@ const shopSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, "Please enter your shop email address"],
+    unique: [true, 'email already exist please try with another email']
   },
   password: {
     type: String,
@@ -27,6 +28,7 @@ const shopSchema = new mongoose.Schema({
   phoneNumber: {
     type: Number,
     required: true,
+    unique: [true, 'phone number already exist please try with phone number']
   },
   role: {
     type: String,
@@ -72,6 +74,14 @@ const shopSchema = new mongoose.Schema({
   },
   resetPasswordToken: String,
   resetPasswordTime: Date,
+  is_approved: {
+    type: Boolean,
+    default: false,
+  },
+  is_block: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // Hash password

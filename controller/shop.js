@@ -120,6 +120,13 @@ router.post(
       if (!user) {
         return next(new ErrorHandler("User doesn't exists!", 400));
       }
+      if (user?.is_block) {
+        return next(new ErrorHandler("Admin Blocked You", 403))
+      }
+
+      if (!user?.is_approved) {
+        return next(new ErrorHandler("Please wait For Admin Approval", 403))
+      }
 
       const isPasswordValid = await user.comparePassword(password);
 
@@ -268,6 +275,28 @@ router.get(
       res.status(201).json({
         success: true,
         sellers,
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+// Approve sellers --- for admin
+router.patch(
+  "/admin-approve-seller/:id",
+  isAuthenticated,
+  isAdmin("Admin"),
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const { id } = req?.params
+      const sellers = await Shop.findOneAndUpdate(
+        { _id: id },
+        { is_approved: true },
+        { new: true }
+      );
+      res.status(201).json({
+        success: true,
+        message: 'Sellers approved Successfully',
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
