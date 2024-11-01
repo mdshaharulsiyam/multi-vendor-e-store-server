@@ -171,7 +171,7 @@ router.get(
       //   success: true,
       //   message: "Log out successful!",
       // });
-      res.clearCookie('token', { maxAge: 0 })
+      res.clearCookie('seller_token', { maxAge: 0 })
         .status(201).json({
           success: true,
           message: "Log out successful!",
