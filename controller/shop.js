@@ -163,14 +163,25 @@ router.get(
   "/logout",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      res.cookie("seller_token", null, {
-        expires: new Date(Date.now()),
+      const options = {
+        expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
         httpOnly: true,
-      });
-      res.status(201).json({
+        sameSite: "none",
+        secure: true,
+      };
+
+      res.status(200).cookie("seller_token", '', options).json({
         success: true,
         message: "Log out successful!",
       });
+      // res.cookie("seller_token", null, {
+      //   expires: new Date(Date.now()),
+      //   httpOnly: true,
+      // });
+      // res.status(201).json({
+      //   success: true,
+      //   message: "Log out successful!",
+      // });
       // res.clearCookie('seller_token', { maxAge: 0 })
       //   .status(201).json({
       //     success: true,
