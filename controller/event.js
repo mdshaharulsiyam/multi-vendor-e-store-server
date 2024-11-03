@@ -21,8 +21,10 @@ router.post(
         return next(new ErrorHandler("Shop Id is invalid!", 400));
       } else {
         const files = req.files;
-        const imageUrls = files.map((file) => `${file.filename}`);
-
+        // const imageUrls = files.map((file) => `${file.filename}`);
+        const uploadPromises = files.map(file => uploadToDrive(file));
+        const results = await Promise.all(uploadPromises);
+        const imageUrls = results.map((file) => `${file.viewableUrl}`);
         const eventData = req.body;
         eventData.images = imageUrls;
         eventData.shop = shop;
@@ -176,7 +178,7 @@ router.put(
 
       res.status(200).json({
         success: true,
-        message: "Reviwed succesfully!",
+        message: "Reviewed successfully!",
       });
     } catch (error) {
       return next(new ErrorHandler(error, 400));
